@@ -7,6 +7,9 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Items.h"
+#include "InventoryComponent.h"
+#include "Weapon.h"
 
 //////////////////////////////////////////////////////////////////////////
 // ARPGConceptCharacter
@@ -66,6 +69,23 @@ ARPGConceptCharacter::ARPGConceptCharacter()
 	experienceToLevel = 100.f;
 
 	hasAttacked = false;
+	attackSpeed = 1.f;
+	playerDamage = 1.f;
+
+	Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
+	Inventory->Capacity = 20;
+
+	GetMesh()->OnComponentHit.AddDynamic(this, &ARPGConceptCharacter::OnHit);
+	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapBegin);
+}
+
+void ARPGConceptCharacter::UseItem(UItems* Item)
+{
+	if (Item)
+	{
+		Item->Use(this);
+		Item->OnUse(this); //Blueprint Event
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -214,13 +234,11 @@ void ARPGConceptCharacter::ZoomOut()
 	}
 }
 
-void ARPGConceptCharacter::TakeDamage(float _damageAmount)
+float ARPGConceptCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
 {
-	playerHealth -= _damageAmount;
-	if (playerHealth <= 0.f)
-	{
-		playerHealth = 0.f;
-	}
+	float DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	playerHealth -= DamageToApply;
+	return DamageToApply;
 }
 
 void ARPGConceptCharacter::GainExperience(float _expAmount)
@@ -239,4 +257,27 @@ void ARPGConceptCharacter::GainExperience(float _expAmount)
 void ARPGConceptCharacter::Attack()
 {
 	hasAttacked = true;
+}
+
+void ARPGConceptCharacter::WeaponModifiers()
+{
+	attackSpeed += currentWeapon->baseSpeed;
+	playerDamage += currentWeapon->baseDamage;
+}
+
+void ARPGConceptCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+{
+
+}
+
+void ARPGConceptCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+
+	UE_LOG(LogTemp, Warning, TEXT("player"));
+	currentWeapon = Cast<AWeapon>(OtherActor);
+	if (currentWeapon)
+	{
+	}
+	
+
 }

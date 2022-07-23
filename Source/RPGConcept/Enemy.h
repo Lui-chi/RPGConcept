@@ -17,10 +17,19 @@ public:
 
 protected:
 	// Called when the game starts or when spawned
-	virtual void BeginPlay() override;
+		virtual void BeginPlay() override;
 
-	UFUNCTION(BlueprintCallable, Category = "Enemy")
-		void TakeDamage(float _damage);
+		UFUNCTION(BlueprintCallable, Category = "Enemy")
+			virtual float TakeDamage
+			(
+				float DamageAmount,
+				struct FDamageEvent const& DamageEvent,
+				class AController* EventInstigator,
+				AActor* DamageCauser
+			);
+
+	UPROPERTY(EditAnywhere, Category = "Weapon")
+		class ARPGConceptCharacter* RPGPlayer;
 
 
 	//GETTERS
@@ -49,6 +58,9 @@ public:
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Enemy")
+		bool DoOnce;
+
 
 private:
 	UPROPERTY(VisibleAnywhere, Category = "Enemy")
@@ -59,4 +71,17 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Enemy")
 		bool isDead;
+
+	UFUNCTION()
+		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	UFUNCTION()
+		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+
+	UFUNCTION()
+		void CheckAnimation();
+
+	UPROPERTY()
+		FTimerHandle CheckAnims;
 };

@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "RPGConceptCharacter.generated.h"
 
+
+
 UCLASS(config=Game)
 class ARPGConceptCharacter : public ACharacter
 {
@@ -18,12 +20,46 @@ class ARPGConceptCharacter : public ACharacter
 	/** Follow camera */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 	class UCameraComponent* FollowCamera;
+
+	
+
 public:
 	ARPGConceptCharacter();
 
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateGamepad;
+
+	UFUNCTION(BlueprintCallable, Category = "Items")
+		void UseItem(class UItems* Item);
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	class UInventoryComponent* Inventory;
+	//GETTERS
+
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		bool GetHasAttacked() { return hasAttacked; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		float GetAttackSpeed() { return attackSpeed; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		float GetPlayerDamage() { return playerDamage; }
+
+	UFUNCTION(BlueprintCallable, Category = "Health")
+		float GetPlayerHealth() { return playerHealth; }
+
+	UFUNCTION(BlueprintCallable, Category = "Heal")
+		float GetPlayerStamina() { return playerStamina; }
+	//SETTERS
+
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void SetHasAttacked(bool Attacked) { hasAttacked = Attacked; }
+
+	UFUNCTION(BlueprintCallable, Category = "Heal")
+		void Heal(float _healAmount);
+
 
 protected:
 
@@ -41,28 +77,21 @@ protected:
 
 	void ZoomOut();
 
+	void WeaponModifiers();
 
 
 
-	//GETTERS
 
 
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		bool GetHasAttacked() { return hasAttacked; }
 
-
-	UFUNCTION(BlueprintCallable, Category = "Heal")
-		float GetPlayerHealth() { return playerHealth; }
-
-	UFUNCTION(BlueprintCallable, Category = "Heal")
-		float GetPlayerStamina() { return playerStamina; }
-	//SETTERS
-
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		void SetHasAttacked(bool Attacked) { hasAttacked = Attacked; }
-
-
+	UFUNCTION(BlueprintCallable, Category = "Enemy")
+		virtual float TakeDamage
+		(
+			float DamageAmount,
+			struct FDamageEvent const& DamageEvent,
+			class AController* EventInstigator,
+			AActor* DamageCauser
+		);
 
 
 	UFUNCTION(BlueprintCallable, Category = "Attack")
@@ -70,17 +99,9 @@ protected:
 
 
 
-	UFUNCTION(BlueprintCallable, Category = "Heal")
-		void Heal(float _healAmount);
-
-
-	
 
 
 
-
-	UFUNCTION(BlueprintCallable, Category = "Heal")
-		void TakeDamage(float _damageAmount);
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
 		bool GetisOverlappingItem() { return isOverlappingItem; }
@@ -136,6 +157,8 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Health")
 		float playerStamina;
 
+	UPROPERTY(EditAnywhere, Category = "Health")
+		float playerDamage;
 
 
 	UPROPERTY(EditAnywhere, Category = "Items")
@@ -165,9 +188,24 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Stats")
 		int intellectValue;
 	
+	UPROPERTY(VisibleAnywhere, Category = "Stats")
+		float attackSpeed;
 
 	UPROPERTY(VisibleAnywhere, Category = "Attack")
 		bool hasAttacked;
+
+	UPROPERTY(VisibleAnywhere, Category = "Weapon")
+		class AWeapon* currentWeapon;
+
+	UPROPERTY(VisibleAnywhere, Category = "Enemy")
+		class AEnemy* Enemy;
+
+
+	UFUNCTION()
+		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
+
+	UFUNCTION()
+		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 
 public:
