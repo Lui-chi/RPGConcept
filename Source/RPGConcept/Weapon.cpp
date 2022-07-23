@@ -5,18 +5,17 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "RPGConceptCharacter.h"
+#include "InventoryComponent.h"
+#include "Items.h"
 
 
 AWeapon::AWeapon()
 {
 
-
-	Collider = CreateDefaultSubobject<UCapsuleComponent>(TEXT("Collider"));
-	Collider->SetupAttachment(RootComp);
-	Collider->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnOverlapBegin);
-
 	Mesh = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("Mesh"));
 	Mesh->SetupAttachment(Collider);
+
+	Collider->OnComponentBeginOverlap.AddDynamic(this, &AWeapon::OnOverlapBegin);
 
 	levelReq = 1;
 	baseDamage = 10.f;
@@ -28,10 +27,4 @@ AWeapon::AWeapon()
 void AWeapon::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 
-	RPGPlayer = Cast<ARPGConceptCharacter>(OtherActor);
-	if (RPGPlayer)
-	{
-		Collider->AttachToComponent(RPGPlayer->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("WeaponSocket"));
-		Mesh->AttachToComponent(RPGPlayer->GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("WeaponSocket"));
-	}
 }

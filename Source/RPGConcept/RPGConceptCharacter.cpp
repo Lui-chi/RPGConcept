@@ -7,6 +7,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Items.h"
 #include "InventoryComponent.h"
 #include "Weapon.h"
@@ -75,8 +76,9 @@ ARPGConceptCharacter::ARPGConceptCharacter()
 	Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
 	Inventory->Capacity = 20;
 
-	GetMesh()->OnComponentHit.AddDynamic(this, &ARPGConceptCharacter::OnHit);
-	GetMesh()->OnComponentBeginOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapBegin);
+	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ARPGConceptCharacter::OnHit);
+	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapBegin); 
+	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapEnd);
 }
 
 void ARPGConceptCharacter::UseItem(UItems* Item)
@@ -101,7 +103,8 @@ void ARPGConceptCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Sprint", IE_Pressed, this, &ARPGConceptCharacter::Sprint);
 	PlayerInputComponent->BindAction("Sprint", IE_Released, this, &ARPGConceptCharacter::StopSprinting);
 
-	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ARPGConceptCharacter::EquipItem);
+	PlayerInputComponent->BindAction("Equip", IE_Pressed, this, &ARPGConceptCharacter::PickupItem);
+	PlayerInputComponent->BindAction("Equip", IE_Released , this, &ARPGConceptCharacter::PickupItem);
 
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &ARPGConceptCharacter::Attack);
 
@@ -197,12 +200,14 @@ void ARPGConceptCharacter::Heal(float _healAmount)
 	}
 }
 
-void ARPGConceptCharacter::EquipItem()
+void ARPGConceptCharacter::PickupItem()
 {
 	if (isOverlappingItem)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("We picked up an item"));
+		Inventory->AddItem(ItemComponent);
+		OverlappingActor->Destroy();
 	}
+
 }
 
 void ARPGConceptCharacter::ZoomIn()
@@ -272,12 +277,21 @@ void ARPGConceptCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* Othe
 
 void ARPGConceptCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-
-	UE_LOG(LogTemp, Warning, TEXT("player"));
-	currentWeapon = Cast<AWeapon>(OtherActor);
-	if (currentWeapon)
+	ItemComponent = OtherActor->FindComponentByClass<UItems>();
+	OverlappingActor = OtherActor;
+	if (ItemComponent && OverlappingActor)
 	{
+		isOverlappingItem = true;
 	}
-	
-
 }
+
+void ARPGConceptCharacter::OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	isOverlappingItem = false;
+}
+
+void ARPGConceptCharacter::EquipItem(AWeapon* Weapon)
+{
+	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, "WeaponSocket");
+}
+

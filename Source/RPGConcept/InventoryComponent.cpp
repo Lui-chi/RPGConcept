@@ -13,10 +13,12 @@ UInventoryComponent::UInventoryComponent()
 
 bool UInventoryComponent::AddItem(UItems* Item)
 {
-	if ((Items.Num() >= Capacity || Item))
+	if ((Items.Num() >= Capacity || !Item))
 	{
+
 		return false;
 	}
+
 
 	Item->OwningInventory = this;
 	Item->World = GetWorld();

@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "PickableObjects.h"
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
@@ -16,7 +17,7 @@ enum class EWeaponType : uint8
 };
 
 UCLASS()
-class RPGCONCEPT_API AWeapon : public AActor
+class RPGCONCEPT_API AWeapon : public APickableObjects
 {
 	GENERATED_BODY()
 
@@ -29,8 +30,6 @@ protected:
 	//virtual void BeginPlay() override;
 
 public:
-	UPROPERTY(VisibleAnywhere)
-		class USceneComponent* RootComp;
 
 	UPROPERTY(VisibleAnywhere)
 		class USkeletalMeshComponent* Mesh;
@@ -45,18 +44,9 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 		EWeaponType weaponType;
+
+
 private:
 
-	//UPROPERTY(VisibleAnywhere)
-	//	class USceneComponent* RootComp;
-	UPROPERTY(VisibleAnywhere)
-		class UCapsuleComponent* Collider;
-
-
-
-	UPROPERTY()
-		class ARPGConceptCharacter* RPGPlayer;
-
-	UFUNCTION()
-		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+	void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 };

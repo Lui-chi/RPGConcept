@@ -4,13 +4,14 @@
 
 #include "CoreMinimal.h"
 #include "UObject/NoExportTypes.h"
+#include "Components/ActorComponent.h"
 #include "Items.generated.h"
 
 /**
  * 
  */
-UCLASS(Abstract, BlueprintType, Blueprintable, EditInLineNew, DefaultToInstanced)
-class RPGCONCEPT_API UItems : public UObject
+UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
+class RPGCONCEPT_API UItems : public UActorComponent
 {
 	GENERATED_BODY()
 	
@@ -18,7 +19,7 @@ public:
 
 	UItems();
 
-	virtual class UWorld* GetWorld() const { return World; };
+	//virtual class UWorld* GetWorld() const { return World; };
 
 	UPROPERTY(Transient)
 	class UWorld* World;

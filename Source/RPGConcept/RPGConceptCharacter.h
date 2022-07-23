@@ -32,7 +32,7 @@ public:
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
 		void UseItem(class UItems* Item);
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
 	class UInventoryComponent* Inventory;
 	//GETTERS
 
@@ -60,6 +60,9 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Heal")
 		void Heal(float _healAmount);
 
+	UFUNCTION()
+		void EquipItem(AWeapon* Weapon);
+
 
 protected:
 
@@ -80,10 +83,6 @@ protected:
 	void WeaponModifiers();
 
 
-
-
-
-
 	UFUNCTION(BlueprintCallable, Category = "Enemy")
 		virtual float TakeDamage
 		(
@@ -99,10 +98,6 @@ protected:
 
 
 
-
-
-
-
 	UFUNCTION(BlueprintCallable, Category = "Items")
 		bool GetisOverlappingItem() { return isOverlappingItem; }
 
@@ -111,7 +106,7 @@ protected:
 		void SetisOverlappingItem(bool Overlapping) { isOverlappingItem = Overlapping; }
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
-		void EquipItem();
+		void PickupItem();
 
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 		void GainExperience(float _expAmount);
@@ -146,6 +141,13 @@ protected:
 
 
 private:
+
+	UPROPERTY()
+		class UItems* ItemComponent;
+
+	UPROPERTY()
+		AActor* OverlappingActor;
+
 	UPROPERTY(EditAnywhere, Category = "Movement")
 		bool isSprinting;
 
@@ -206,6 +208,11 @@ private:
 
 	UFUNCTION()
 		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
+
+	UFUNCTION()
+		void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
+
+	
 
 
 public:
