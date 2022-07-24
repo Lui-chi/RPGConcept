@@ -22,16 +22,19 @@ class ARPGConceptCharacter : public ACharacter
 	class UCameraComponent* FollowCamera;
 
 	
+	
 
 public:
 	ARPGConceptCharacter();
 
+	UPROPERTY()
+		class AWeapon* CurrentWeapon;
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateGamepad;
 
 	UFUNCTION(BlueprintCallable, Category = "Items")
-		void UseItem(class UItems* Item);
+		void UseItem(class AItems* Item);
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
 	class UInventoryComponent* Inventory;
 	//GETTERS
@@ -44,13 +47,17 @@ public:
 		float GetAttackSpeed() { return attackSpeed; }
 
 	UFUNCTION(BlueprintCallable, Category = "Attack")
-		float GetPlayerDamage() { return playerDamage; }
+		float GetPlayerDamage() { return playerDamage * 0.01f; }
 
 	UFUNCTION(BlueprintCallable, Category = "Health")
 		float GetPlayerHealth() { return playerHealth; }
 
 	UFUNCTION(BlueprintCallable, Category = "Heal")
 		float GetPlayerStamina() { return playerStamina; }
+
+	UFUNCTION(BlueprintCallable, Category = "Stats")
+		float GetPlayerLevel() { return currentLevel; }
+
 	//SETTERS
 
 
@@ -61,7 +68,7 @@ public:
 		void Heal(float _healAmount);
 
 	UFUNCTION()
-		void EquipItem(AWeapon* Weapon);
+		void EquipWeapon(AWeapon* Weapon, TSubclassOf<AWeapon> WeaponClass);
 
 
 protected:
@@ -143,7 +150,7 @@ protected:
 private:
 
 	UPROPERTY()
-		class UItems* ItemComponent;
+		class AItems* ItemComponent;
 
 	UPROPERTY()
 		AActor* OverlappingActor;
@@ -195,9 +202,6 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Attack")
 		bool hasAttacked;
-
-	UPROPERTY(VisibleAnywhere, Category = "Weapon")
-		class AWeapon* currentWeapon;
 
 	UPROPERTY(VisibleAnywhere, Category = "Enemy")
 		class AEnemy* Enemy;

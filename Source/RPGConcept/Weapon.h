@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "PickableObjects.h"
+#include "Items.h"
 #include "Weapon.generated.h"
 
 UENUM(BlueprintType)
@@ -17,7 +17,7 @@ enum class EWeaponType : uint8
 };
 
 UCLASS()
-class RPGCONCEPT_API AWeapon : public APickableObjects
+class RPGCONCEPT_API AWeapon : public AItems
 {
 	GENERATED_BODY()
 
@@ -29,10 +29,16 @@ protected:
 	// Called when the game starts or when spawned
 	//virtual void BeginPlay() override;
 
+	virtual void Use(class ARPGConceptCharacter* Character) override;
+
 public:
 
 	UPROPERTY(VisibleAnywhere)
 		class USkeletalMeshComponent* Mesh;
+
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<AWeapon> WeaponClass;
+
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 		int levelReq;
 

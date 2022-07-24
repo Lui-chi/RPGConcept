@@ -67,12 +67,19 @@ void AEnemy::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherAc
 	if (Weapon && RPGPlayer)
 	{
 		if (RPGPlayer->GetHasAttacked() && DoOnce)
-		{			
+		{	
+			FVector ShotDirection;
+			FHitResult Hit;
+			AActor* HitActor = Hit.GetActor();
+			AController* OwnerController = GetController();
+			FPointDamageEvent DamageEvent(RPGPlayer->GetPlayerDamage(), Hit, ShotDirection, nullptr);
+
+			TakeDamage(RPGPlayer->GetPlayerDamage(), DamageEvent, OwnerController, OtherActor);	
 			UE_LOG(LogTemp, Warning, TEXT("111111"));
 			DoOnce = false;
 		}
 
-			//TakeDamage(RPGPlayer->GetPlayerDamage(), DamageEvent, OwnerController, OtherActor);
+			
 
 	}
 }

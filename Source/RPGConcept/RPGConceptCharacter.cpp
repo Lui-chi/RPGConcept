@@ -81,7 +81,7 @@ ARPGConceptCharacter::ARPGConceptCharacter()
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapEnd);
 }
 
-void ARPGConceptCharacter::UseItem(UItems* Item)
+void ARPGConceptCharacter::UseItem(AItems* Item)
 {
 	if (Item)
 	{
@@ -204,8 +204,10 @@ void ARPGConceptCharacter::PickupItem()
 {
 	if (isOverlappingItem)
 	{
-		Inventory->AddItem(ItemComponent);
-		OverlappingActor->Destroy();
+		Inventory->AddItem(Cast<AItems>(OverlappingActor));
+		OverlappingActor->SetActorHiddenInGame(true);
+		OverlappingActor->SetActorEnableCollision(false);
+		isOverlappingItem = false;
 	}
 
 }
@@ -266,8 +268,6 @@ void ARPGConceptCharacter::Attack()
 
 void ARPGConceptCharacter::WeaponModifiers()
 {
-	attackSpeed += currentWeapon->baseSpeed;
-	playerDamage += currentWeapon->baseDamage;
 }
 
 void ARPGConceptCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
@@ -277,11 +277,13 @@ void ARPGConceptCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* Othe
 
 void ARPGConceptCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	ItemComponent = OtherActor->FindComponentByClass<UItems>();
-	OverlappingActor = OtherActor;
-	if (ItemComponent && OverlappingActor)
+	if (OverlappingActor != OtherActor)
 	{
-		isOverlappingItem = true;
+		OverlappingActor = OtherActor;
+		if (OverlappingActor)
+		{
+			isOverlappingItem = true;
+		}
 	}
 }
 
@@ -290,8 +292,12 @@ void ARPGConceptCharacter::OnOverlapEnd(class UPrimitiveComponent* OverlappedCom
 	isOverlappingItem = false;
 }
 
-void ARPGConceptCharacter::EquipItem(AWeapon* Weapon)
+void ARPGConceptCharacter::EquipWeapon(AWeapon* Weapon, TSubclassOf<AWeapon> WeaponClass)
 {
-	Weapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, "WeaponSocket");
+	CurrentWeapon = Weapon;
+	attackSpeed += CurrentWeapon->baseSpeed;
+	playerDamage += CurrentWeapon->baseDamage;
+	CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass);
+	CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, "WeaponSocket");
 }
 

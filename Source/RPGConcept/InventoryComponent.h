@@ -18,11 +18,11 @@ public:
 	// Sets default values for this component's properties
 	UInventoryComponent();
 
-	bool AddItem(class UItems* Item);
-	bool RemoveItem(class UItems* Item);
+	bool AddItem(class AItems* Item);
+	bool RemoveItem(class AItems* Item);
 
 	UPROPERTY(EditAnywhere, Instanced, Category = "Inventory")
-		TArray<class UItems*> DefaultItems;
+		TArray<class AItems*> DefaultItems;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 		int32 Capacity;
@@ -31,7 +31,7 @@ public:
 		FOnInventoryUpdated OnInventoryUpdated;
 
 	UPROPERTY(EditAnywhere, Instanced,  BlueprintReadOnly, Category = "Inventory")
-		TArray<class UItems*> Items;
+		TArray<class AItems*> Items;
 
 protected:
 	// Called when the game starts

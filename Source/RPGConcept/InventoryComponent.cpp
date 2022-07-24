@@ -11,7 +11,7 @@ UInventoryComponent::UInventoryComponent()
 	Capacity = 20;
 }
 
-bool UInventoryComponent::AddItem(UItems* Item)
+bool UInventoryComponent::AddItem(AItems* Item)
 {
 	if ((Items.Num() >= Capacity || !Item))
 	{
@@ -29,7 +29,7 @@ bool UInventoryComponent::AddItem(UItems* Item)
 	return true;
 }
 
-bool UInventoryComponent::RemoveItem(UItems* Item)
+bool UInventoryComponent::RemoveItem(AItems* Item)
 {
 	if (Item)
 	{
@@ -48,7 +48,7 @@ void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	for (UItems* Item : DefaultItems)
+	for (AItems* Item : DefaultItems)
 	{
 		AddItem(Item);
 	}

@@ -4,23 +4,26 @@
 
 #include "CoreMinimal.h"
 #include "Items.h"
-#include "FoodItems.generated.h"
+#include "HealthPotion.generated.h"
 
 /**
  * 
  */
 UCLASS()
-class RPGCONCEPT_API UFoodItems : public UItems
+class RPGCONCEPT_API AHealthPotion : public AItems
 {
 	GENERATED_BODY()
 	
-
 public:
-	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item", meta = (ClampMin = 0.0))
-		float HealthToHeal;
-
+	AHealthPotion();
 
 protected:
+
 	virtual void Use(class ARPGConceptCharacter* Character) override;
 
+	UPROPERTY(EditAnywhere)
+		float HealthToHeal;
+
+	UPROPERTY(EditAnywhere)
+		class UStaticMeshComponent* Mesh;
 };

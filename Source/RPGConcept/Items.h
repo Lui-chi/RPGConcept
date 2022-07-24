@@ -11,18 +11,21 @@
  * 
  */
 UCLASS(ClassGroup = (Custom), meta = (BlueprintSpawnableComponent))
-class RPGCONCEPT_API UItems : public UActorComponent
+class RPGCONCEPT_API AItems : public AActor
 {
 	GENERATED_BODY()
 	
 public:
 
-	UItems();
+	AItems();
 
 	//virtual class UWorld* GetWorld() const { return World; };
 
 	UPROPERTY(Transient)
 	class UWorld* World;
+
+	UPROPERTY(EditAnywhere)
+	class UCapsuleComponent* Collider;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadWrite, Category = "Item")
 	FText UseActionText;
