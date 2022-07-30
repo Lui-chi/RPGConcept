@@ -8,9 +8,9 @@
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Items.h"
-#include "InventoryComponent.h"
-#include "Weapon.h"
+#include "RPGConceptData.h"
+#include "BaseInteractable.h"
+
 
 //////////////////////////////////////////////////////////////////////////
 // ARPGConceptCharacter
@@ -56,7 +56,7 @@ ARPGConceptCharacter::ARPGConceptCharacter()
 
 	isOverlappingItem = false;
 	isSprinting = false;
-	playerHealth = 1.0f;
+	playerHealth = 0.5f;
 	playerStamina = 1.0f;
 	isZoomedIn = false;
 
@@ -73,28 +73,35 @@ ARPGConceptCharacter::ARPGConceptCharacter()
 	attackSpeed = 1.f;
 	playerDamage = 1.f;
 
-	Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
-	Inventory->Capacity = 20;
+	ComboEnd = false;
+	ComboFailed = false;
+	ComboSuccess = false;
+	ClickCounter = 0;
+
+	//Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
+	//Inventory->Capacity = 20;
 
 	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ARPGConceptCharacter::OnHit);
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapBegin); 
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapEnd);
 }
 
-void ARPGConceptCharacter::UseItem(AItems* Item)
+/*void ARPGConceptCharacter::UseItem(AItems* Item)
 {
 	if (Item)
 	{
 		Item->Use(this);
 		Item->OnUse(this); //Blueprint Event
 	}
-}
+}*/
 
 //////////////////////////////////////////////////////////////////////////
 // Input
 
+
 void ARPGConceptCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent)
 {
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
 	// Set up gameplay key bindings
 	check(PlayerInputComponent);
 	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &ACharacter::Jump);
@@ -127,6 +134,9 @@ void ARPGConceptCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindTouch(IE_Released, this, &ARPGConceptCharacter::TouchStopped);
 }
 
+
+
+
 void ARPGConceptCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {
 	Jump();
@@ -136,6 +146,41 @@ void ARPGConceptCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector L
 {
 	StopJumping();
 }
+
+void ARPGConceptCharacter::OnPressed(FRPGConceptItemInfo RPGItemInfo)
+{
+
+	int32 index = Inventory.Find(RPGItemInfo);
+	index = FMath::Clamp(index, 0,24);
+
+	if (Inventory.Contains(RPGItemInfo))
+	{
+		Inventory[index].CurrentStack--;
+		if (RPGItemInfo.ItemType == ERPGConceptItemType::Sword)
+		{
+			Weapon = RPGItemInfo.ItemClass;
+		}
+
+		if (RPGItemInfo.ItemType == ERPGConceptItemType::HealthItem)
+		{
+			Heal(RPGItemInfo.Potency);
+		}
+
+		if (RPGItemInfo.ItemType == ERPGConceptItemType::Shield)
+		{
+			Shield = RPGItemInfo.ItemClass;
+		}
+
+		if (Inventory[index].CurrentStack <= 1)
+		{
+			Inventory.RemoveAt(index);
+		}
+
+
+	}
+
+}
+
 
 void ARPGConceptCharacter::TurnAtRate(float Rate)
 {
@@ -204,10 +249,48 @@ void ARPGConceptCharacter::PickupItem()
 {
 	if (isOverlappingItem)
 	{
-		Inventory->AddItem(Cast<AItems>(OverlappingActor));
-		OverlappingActor->SetActorHiddenInGame(true);
-		OverlappingActor->SetActorEnableCollision(false);
-		isOverlappingItem = false;
+		bool isUnique = true;
+		bool isFull = false;
+		int32 index = 0;
+		IReactToTriggerInterface* MyTrigger = Cast<IReactToTriggerInterface>(OverlappingActor);
+		if (MyTrigger)
+		{
+			FRPGConceptItemInfo ReturnedStruct = MyTrigger->GetMyStruct();
+			
+			for (FRPGConceptItemInfo InventoryName : Inventory)
+			{					
+				if (ReturnedStruct.ItemName == InventoryName.ItemName && index >= 0)
+				{
+					if (Inventory[index].CurrentStack <= Inventory[index].MaxStack)
+					{
+						Inventory[index].CurrentStack++;
+						UE_LOG(LogTemp, Warning, TEXT("%i"), InventoryName.CurrentStack);
+						isUnique = false;
+					}
+					else
+					{
+						isFull = true;
+					}
+
+				}
+				index++;
+
+			}
+			if (isUnique)
+			{
+				Inventory.Add(ReturnedStruct);
+				UE_LOG(LogTemp, Warning, TEXT("Added"));
+			}
+			if (!isFull)
+			{
+				OverlappingActor->SetActorHiddenInGame(true);
+				OverlappingActor->SetActorEnableCollision(false);
+				isOverlappingItem = false;
+			}
+
+
+		}
+
 	}
 
 }
@@ -263,7 +346,6 @@ void ARPGConceptCharacter::GainExperience(float _expAmount)
 
 void ARPGConceptCharacter::Attack()
 {
-	hasAttacked = true;
 }
 
 void ARPGConceptCharacter::WeaponModifiers()
@@ -290,14 +372,5 @@ void ARPGConceptCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, A
 void ARPGConceptCharacter::OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
 {
 	isOverlappingItem = false;
-}
-
-void ARPGConceptCharacter::EquipWeapon(AWeapon* Weapon, TSubclassOf<AWeapon> WeaponClass)
-{
-	CurrentWeapon = Weapon;
-	attackSpeed += CurrentWeapon->baseSpeed;
-	playerDamage += CurrentWeapon->baseDamage;
-	CurrentWeapon = GetWorld()->SpawnActor<AWeapon>(WeaponClass);
-	CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, "WeaponSocket");
 }
 

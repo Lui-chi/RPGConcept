@@ -5,7 +5,7 @@
 #include "RPGConceptCharacter.h"
 #include "Kismet/GameplayStatics.h"
 #include "Components/CapsuleComponent.h"
-#include "Weapon.h"
+
 
 // Sets default values
 AEnemy::AEnemy()
@@ -62,7 +62,7 @@ void AEnemy::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimi
 void AEnemy::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 
-	AWeapon* Weapon = Cast<AWeapon>(OtherActor);
+	/*AWeapon* Weapon = Cast<AWeapon>(OtherActor);
 	GetWorldTimerManager().SetTimer(CheckAnims, this, &AEnemy::CheckAnimation, 0.2f, true);
 	if (Weapon && RPGPlayer)
 	{
@@ -81,7 +81,7 @@ void AEnemy::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherAc
 
 			
 
-	}
+	}*/
 }
 
 void AEnemy::CheckAnimation()

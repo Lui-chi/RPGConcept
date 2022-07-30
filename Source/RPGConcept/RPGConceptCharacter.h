@@ -4,11 +4,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "RPGConceptData.h"
 #include "RPGConceptCharacter.generated.h"
 
 
 
-UCLASS(config=Game)
+UCLASS()
 class ARPGConceptCharacter : public ACharacter
 {
 	GENERATED_BODY()
@@ -27,21 +28,42 @@ class ARPGConceptCharacter : public ACharacter
 public:
 	ARPGConceptCharacter();
 
-	UPROPERTY()
-		class AWeapon* CurrentWeapon;
+
+
+
+	// APawn interface
+
+	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+	// End of APawn interface
+
+
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateGamepad;
 
-	UFUNCTION(BlueprintCallable, Category = "Items")
-		void UseItem(class AItems* Item);
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
-	class UInventoryComponent* Inventory;
+	//UFUNCTION(BlueprintCallable, Category = "Items")
+	//	void UseItem(class AItems* Item);
+	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
+	//class UInventoryComponent* Inventory;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")
+		int32 ClickCounter;
+
 	//GETTERS
 
 
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 		bool GetHasAttacked() { return hasAttacked; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		bool GetComboEnd() { return ComboEnd; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		bool GetComboFailed() { return ComboFailed; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		bool GetComboSuccess() { return ComboSuccess; }
 
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 		float GetAttackSpeed() { return attackSpeed; }
@@ -64,11 +86,24 @@ public:
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 		void SetHasAttacked(bool Attacked) { hasAttacked = Attacked; }
 
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void SetComboEnd(bool Combo) { ComboEnd = Combo; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void SetComboFailed(bool Combo) { ComboFailed = Combo; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void SetComboSuccess(bool Combo) { ComboSuccess = Combo; }
+
 	UFUNCTION(BlueprintCallable, Category = "Heal")
 		void Heal(float _healAmount);
 
-	UFUNCTION()
-		void EquipWeapon(AWeapon* Weapon, TSubclassOf<AWeapon> WeaponClass);
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void SetPlayerDamage(float _increaseAmount) { playerDamage = basePlayerDamage + _increaseAmount; }
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void SetPlayerAttackSpeed(float _increaseAmount) { attackSpeed = baseAttackSpeed + _increaseAmount; }
+
 
 
 protected:
@@ -118,6 +153,10 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = "Stats")
 		void GainExperience(float _expAmount);
 
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+		TArray<FRPGConceptItemInfo> Inventory;
+
 	/** 
 	 * Called via input to turn at a given rate. 
 	 * @param Rate	This is a normalized rate, i.e. 1.0 means 100% of desired turn rate
@@ -140,17 +179,21 @@ protected:
 
 
 protected:
-	// APawn interface
-	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
-	// End of APawn interface
 
+	//ImplementableEventsFunction
 
+	UFUNCTION(BlueprintCallable)
+		void OnPressed(FRPGConceptItemInfo RPGItemInfo);
 
 
 private:
 
+
 	UPROPERTY()
-		class AItems* ItemComponent;
+		TSubclassOf<ABaseInteractable> Weapon {nullptr};
+
+	UPROPERTY()
+		TSubclassOf<ABaseInteractable> Shield{ nullptr };
 
 	UPROPERTY()
 		AActor* OverlappingActor;
@@ -166,9 +209,14 @@ private:
 	UPROPERTY(EditAnywhere, Category = "Health")
 		float playerStamina;
 
-	UPROPERTY(EditAnywhere, Category = "Health")
+	UPROPERTY(EditAnywhere, Category = "Stats")
 		float playerDamage;
 
+	UPROPERTY(EditAnywhere, Category = "Stats")
+		float basePlayerDamage;
+
+	UPROPERTY(VisibleAnywhere, Category = "Stats")
+		float baseAttackSpeed;
 
 	UPROPERTY(EditAnywhere, Category = "Items")
 		bool isOverlappingItem;
@@ -202,6 +250,18 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Attack")
 		bool hasAttacked;
+
+	UPROPERTY(VisibleAnywhere, Category = "Attack")
+		bool ComboEnd;
+
+	UPROPERTY(VisibleAnywhere, Category = "Attack")
+		bool ComboFailed;
+
+	UPROPERTY(VisibleAnywhere, Category = "Attack")
+		bool ComboSuccess;
+
+
+
 
 	UPROPERTY(VisibleAnywhere, Category = "Enemy")
 		class AEnemy* Enemy;
