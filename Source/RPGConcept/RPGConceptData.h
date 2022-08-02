@@ -13,7 +13,9 @@ enum class ERPGConceptItemNames : uint8
 	HealthPotion UMETA(DisplayName = "HealthPotion"),
 	ManaPotion UMETA(DisplayName = "ManaPotion"),
 	IronSword UMETA(DisplayName = "IronSword"),
-	IronShield UMETA(DisplayName = "IronShield")
+	IronShield UMETA(DisplayName = "IronShield"),
+	WoodBow UMETA(DisplayName = "WoodBow"),
+	WoodArrow UMETA(DisplayName = "WoodArrow")
 };
 
 UENUM(BlueprintType)
@@ -23,6 +25,8 @@ enum class ERPGConceptItemType : uint8
 	HealthItem UMETA(DisplayName = "HealthItem"),
 	Sword UMETA(DisplayName = "Sword"),
 	Shield UMETA(DisplayName = "Shield"),
+	Bow UMETA(DisplayName = "Bow"),
+	Arrow UMETA(DisplayName = "Arrow"),
 	KeyItem UMETA(DisplayName = "KeyItem"),
 	Resources UMETA(DisplayName = "Resources")
 };

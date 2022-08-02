@@ -4,7 +4,10 @@
 #include "Enemy.h"
 #include "RPGConceptCharacter.h"
 #include "Kismet/GameplayStatics.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimNotifies/AnimNotify.h"
 #include "Components/CapsuleComponent.h"
+#include "AnimationInstance.h"
 
 
 // Sets default values
@@ -54,6 +57,17 @@ float AEnemy::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEv
 	return DamageToApply;
 }
 
+void AEnemy::Attack()
+{
+	AnimInstance = Cast<UAnimationInstance>(GetMesh()->GetAnimInstance());
+	if (AnimInstance)
+	{
+		AnimInstance->bAcceptsFirstAttackInput = true;
+		AnimInstance->Attack();
+	}
+
+}
+
 void AEnemy::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
 	UE_LOG(LogTemp, Warning, TEXT("hit"));
@@ -86,10 +100,8 @@ void AEnemy::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherAc
 
 void AEnemy::CheckAnimation()
 {
-	if (!RPGPlayer->GetHasAttacked())
-	{
+
 		DoOnce = true;
 		GetWorldTimerManager().ClearTimer(CheckAnims);
-	}
 }
 

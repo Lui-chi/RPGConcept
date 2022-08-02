@@ -15,18 +15,27 @@ public:
 	// Sets default values for this actor's properties
 	AEnemy();
 
+	UFUNCTION(BlueprintCallable, Category = "Enemy")
+		virtual float TakeDamage
+		(
+			float DamageAmount,
+			struct FDamageEvent const& DamageEvent,
+			class AController* EventInstigator,
+			AActor* DamageCauser
+		);
+
+
+	UFUNCTION()
+		void Attack();
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+		class UAnimationInstance* AnimInstance;
+
 protected:
 	// Called when the game starts or when spawned
 		virtual void BeginPlay() override;
 
-		UFUNCTION(BlueprintCallable, Category = "Enemy")
-			virtual float TakeDamage
-			(
-				float DamageAmount,
-				struct FDamageEvent const& DamageEvent,
-				class AController* EventInstigator,
-				AActor* DamageCauser
-			);
+
 
 	UPROPERTY(EditAnywhere, Category = "Weapon")
 		class ARPGConceptCharacter* RPGPlayer;

@@ -30,6 +30,53 @@ public:
 
 
 
+	UPROPERTY(VisibleAnywhere,BlueprintReadWrite, Category = "Attack")
+		bool CombatStance;
+	
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")
+		bool BowStance;
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void FireArrow();
+
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void CheckCollisionAttack();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void CheckCollisionParry();
+
+	UFUNCTION(BlueprintCallable)
+		void EnableRotation(bool Enable);
+
+	UPROPERTY(EditAnywhere,BlueprintReadWrite, Category = "Animation")
+		class UAnimationInstance* AnimInstance;
+
+	UFUNCTION()
+		void Withdrawing();
+
+	UFUNCTION()
+		void WithdrawingBow();
+
+	UFUNCTION()
+		void Sheating();
+
+	UFUNCTION()
+		void SheatingBow();
+
+	UFUNCTION()
+		void ChangeSword();
+
+	UFUNCTION(BlueprintImplementableEvent)
+		void CameraShift();
+
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")
+		bool hasSheated;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")
+		bool hasDrawnBow;
 
 	// APawn interface
 
@@ -41,29 +88,10 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Input)
 	float TurnRateGamepad;
 
-	//UFUNCTION(BlueprintCallable, Category = "Items")
-	//	void UseItem(class AItems* Item);
-	//UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Inventory, meta = (AllowPrivateAccess = "true"))
-	//class UInventoryComponent* Inventory;
 
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadWrite, Category = "Attack")
-		int32 ClickCounter;
 
 	//GETTERS
 
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		bool GetHasAttacked() { return hasAttacked; }
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		bool GetComboEnd() { return ComboEnd; }
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		bool GetComboFailed() { return ComboFailed; }
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		bool GetComboSuccess() { return ComboSuccess; }
 
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 		float GetAttackSpeed() { return attackSpeed; }
@@ -83,17 +111,6 @@ public:
 	//SETTERS
 
 
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		void SetHasAttacked(bool Attacked) { hasAttacked = Attacked; }
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		void SetComboEnd(bool Combo) { ComboEnd = Combo; }
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		void SetComboFailed(bool Combo) { ComboFailed = Combo; }
-
-	UFUNCTION(BlueprintCallable, Category = "Attack")
-		void SetComboSuccess(bool Combo) { ComboSuccess = Combo; }
 
 	UFUNCTION(BlueprintCallable, Category = "Heal")
 		void Heal(float _healAmount);
@@ -108,6 +125,7 @@ public:
 
 protected:
 
+
 	/** Called for forwards/backward input */
 	void MoveForward(float Value);
 
@@ -117,12 +135,6 @@ protected:
 	void Sprint();
 
 	void StopSprinting();
-
-	void ZoomIn();
-
-	void ZoomOut();
-
-	void WeaponModifiers();
 
 
 	UFUNCTION(BlueprintCallable, Category = "Enemy")
@@ -137,6 +149,21 @@ protected:
 
 	UFUNCTION(BlueprintCallable, Category = "Attack")
 		void Attack();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void Parry();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void Kick();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void Roll();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void Sheat();
+
+	UFUNCTION(BlueprintCallable, Category = "Attack")
+		void Bow();
 
 
 
@@ -186,8 +213,8 @@ protected:
 		void OnPressed(FRPGConceptItemInfo RPGItemInfo);
 
 
-private:
 
+private:
 
 	UPROPERTY()
 		TSubclassOf<ABaseInteractable> Weapon {nullptr};
@@ -197,6 +224,13 @@ private:
 
 	UPROPERTY()
 		AActor* OverlappingActor;
+
+
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<ABaseInteractable> ArrowClass;
+
+	UPROPERTY(EditAnywhere)
+		class USceneComponent* FirePoint;
 
 	UPROPERTY(EditAnywhere, Category = "Movement")
 		bool isSprinting;
@@ -248,35 +282,29 @@ private:
 	UPROPERTY(VisibleAnywhere, Category = "Stats")
 		float attackSpeed;
 
-	UPROPERTY(VisibleAnywhere, Category = "Attack")
-		bool hasAttacked;
 
-	UPROPERTY(VisibleAnywhere, Category = "Attack")
-		bool ComboEnd;
+	UPROPERTY(EditAnywhere)
+		class ABaseInteractable* CurrentWeapon;
 
-	UPROPERTY(VisibleAnywhere, Category = "Attack")
-		bool ComboFailed;
+	UPROPERTY(EditAnywhere)
+		class ABaseInteractable* CurrentBow;
 
-	UPROPERTY(VisibleAnywhere, Category = "Attack")
-		bool ComboSuccess;
-
-
+	UPROPERTY(EditAnywhere)
+		class ABaseInteractable* CurrentShield;
 
 
 	UPROPERTY(VisibleAnywhere, Category = "Enemy")
 		class AEnemy* Enemy;
 
+	UPROPERTY(EditAnywhere)
+		TSubclassOf<class UDamageType> DamageType;
 
-	UFUNCTION()
-		void OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit);
 
 	UFUNCTION()
 		void OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);
 
 	UFUNCTION()
 		void OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex);
-
-	
 
 
 public:

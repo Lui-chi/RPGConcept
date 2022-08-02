@@ -9,6 +9,14 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "RPGConceptData.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Animation/AnimInstance.h"
+#include "Animation/AnimNotifies/AnimNotify.h"
+#include "AnimationInstance.h"
+#include "Components/SphereComponent.h"
+#include "Enemy.h"
+#include "Kismet/GameplayStatics.h"
+#include "Arrow.h"
 #include "BaseInteractable.h"
 
 
@@ -54,6 +62,15 @@ ARPGConceptCharacter::ARPGConceptCharacter()
 	// Note: The skeletal mesh and anim blueprint references on the Mesh component (inherited from Character) 
 	// are set in the derived blueprint asset named ThirdPersonCharacter (to avoid direct content references in C++)
 
+
+	//Initialization
+
+
+	FirePoint = CreateDefaultSubobject<USceneComponent>(TEXT("Fire Point"));
+	FirePoint->SetupAttachment(GetCapsuleComponent());
+
+
+
 	isOverlappingItem = false;
 	isSprinting = false;
 	playerHealth = 0.5f;
@@ -69,31 +86,21 @@ ARPGConceptCharacter::ARPGConceptCharacter()
 	experiencePoints = 0.f;
 	experienceToLevel = 100.f;
 
-	hasAttacked = false;
 	attackSpeed = 1.f;
 	playerDamage = 1.f;
 
-	ComboEnd = false;
-	ComboFailed = false;
-	ComboSuccess = false;
-	ClickCounter = 0;
 
-	//Inventory = CreateDefaultSubobject<UInventoryComponent>("Inventory");
-	//Inventory->Capacity = 20;
+	hasSheated = false;
+	CurrentWeapon = nullptr;
+	CurrentBow = nullptr;
 
-	GetCapsuleComponent()->OnComponentHit.AddDynamic(this, &ARPGConceptCharacter::OnHit);
 	GetCapsuleComponent()->OnComponentBeginOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapBegin); 
 	GetCapsuleComponent()->OnComponentEndOverlap.AddDynamic(this, &ARPGConceptCharacter::OnOverlapEnd);
 }
 
-/*void ARPGConceptCharacter::UseItem(AItems* Item)
-{
-	if (Item)
-	{
-		Item->Use(this);
-		Item->OnUse(this); //Blueprint Event
-	}
-}*/
+
+
+
 
 //////////////////////////////////////////////////////////////////////////
 // Input
@@ -114,9 +121,12 @@ void ARPGConceptCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 	PlayerInputComponent->BindAction("Equip", IE_Released , this, &ARPGConceptCharacter::PickupItem);
 
 	PlayerInputComponent->BindAction("Attack", IE_Pressed, this, &ARPGConceptCharacter::Attack);
+	PlayerInputComponent->BindAction("Roll", IE_Pressed, this, &ARPGConceptCharacter::Roll);
+	PlayerInputComponent->BindAction("Parry", IE_Pressed, this, &ARPGConceptCharacter::Parry);
+	PlayerInputComponent->BindAction("Kick", IE_Pressed, this, &ARPGConceptCharacter::Kick);
 
-	PlayerInputComponent->BindAction("Zoom", IE_Pressed, this, &ARPGConceptCharacter::ZoomIn);
-	PlayerInputComponent->BindAction("Zoom", IE_Released, this, &ARPGConceptCharacter::ZoomOut);
+	PlayerInputComponent->BindAction("Sheat", IE_Pressed, this, &ARPGConceptCharacter::Sheat);
+	PlayerInputComponent->BindAction("Bow", IE_Pressed, this, &ARPGConceptCharacter::Bow);
 
 	PlayerInputComponent->BindAxis("Move Forward / Backward", this, &ARPGConceptCharacter::MoveForward);
 	PlayerInputComponent->BindAxis("Move Right / Left", this, &ARPGConceptCharacter::MoveRight);
@@ -137,6 +147,10 @@ void ARPGConceptCharacter::SetupPlayerInputComponent(class UInputComponent* Play
 
 
 
+
+//MOVEMENT FUNCTIONS
+
+
 void ARPGConceptCharacter::TouchStarted(ETouchIndex::Type FingerIndex, FVector Location)
 {
 	Jump();
@@ -147,39 +161,8 @@ void ARPGConceptCharacter::TouchStopped(ETouchIndex::Type FingerIndex, FVector L
 	StopJumping();
 }
 
-void ARPGConceptCharacter::OnPressed(FRPGConceptItemInfo RPGItemInfo)
-{
-
-	int32 index = Inventory.Find(RPGItemInfo);
-	index = FMath::Clamp(index, 0,24);
-
-	if (Inventory.Contains(RPGItemInfo))
-	{
-		Inventory[index].CurrentStack--;
-		if (RPGItemInfo.ItemType == ERPGConceptItemType::Sword)
-		{
-			Weapon = RPGItemInfo.ItemClass;
-		}
-
-		if (RPGItemInfo.ItemType == ERPGConceptItemType::HealthItem)
-		{
-			Heal(RPGItemInfo.Potency);
-		}
-
-		if (RPGItemInfo.ItemType == ERPGConceptItemType::Shield)
-		{
-			Shield = RPGItemInfo.ItemClass;
-		}
-
-		if (Inventory[index].CurrentStack <= 1)
-		{
-			Inventory.RemoveAt(index);
-		}
 
 
-	}
-
-}
 
 
 void ARPGConceptCharacter::TurnAtRate(float Rate)
@@ -193,6 +176,7 @@ void ARPGConceptCharacter::LookUpAtRate(float Rate)
 	// calculate delta for this frame from the rate information
 	AddControllerPitchInput(Rate * TurnRateGamepad * GetWorld()->GetDeltaSeconds());
 }
+
 
 void ARPGConceptCharacter::MoveForward(float Value)
 {
@@ -236,6 +220,72 @@ void ARPGConceptCharacter::StopSprinting()
 	GetCharacterMovement()->MaxWalkSpeed = 333.f;
 }
 
+
+
+//USE ITEMS FUNCTIONS
+
+void ARPGConceptCharacter::OnPressed(FRPGConceptItemInfo RPGItemInfo)
+{
+
+	int32 index = Inventory.Find(RPGItemInfo);
+	index = FMath::Clamp(index, 0, 24);
+
+	if (Inventory.Contains(RPGItemInfo))
+	{
+		Inventory[index].CurrentStack--;
+		if (RPGItemInfo.ItemType == ERPGConceptItemType::Sword)
+		{
+			Weapon = RPGItemInfo.ItemClass;
+			if (CurrentWeapon)
+			{
+				hasSheated = !hasSheated;
+			}
+			else
+			{
+				CurrentWeapon = GetWorld()->SpawnActor<ABaseInteractable>(Weapon);
+				CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("SwordSocket"));
+			}
+
+		}
+
+		if (RPGItemInfo.ItemType == ERPGConceptItemType::Bow)
+		{
+			Weapon = RPGItemInfo.ItemClass;
+			if (CurrentBow)
+			{
+				hasDrawnBow = !hasDrawnBow;
+			}
+			else
+			{
+				CurrentBow = GetWorld()->SpawnActor<ABaseInteractable>(Weapon);
+				CurrentBow->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("BowSocket"));
+			}
+
+		}
+
+
+		if (RPGItemInfo.ItemType == ERPGConceptItemType::HealthItem)
+		{
+			Heal(RPGItemInfo.Potency);
+		}
+
+		if (RPGItemInfo.ItemType == ERPGConceptItemType::Shield)
+		{
+			Weapon = RPGItemInfo.ItemClass;
+			CurrentShield = GetWorld()->SpawnActor<ABaseInteractable>(Weapon);
+			CurrentShield->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("ShieldSocket"));
+		}
+
+		if (Inventory[index].CurrentStack <= 0)
+		{
+			Inventory.RemoveAt(index);
+		}
+
+
+	}
+
+}
+
 void ARPGConceptCharacter::Heal(float _healAmount)
 {
 	playerHealth += _healAmount;
@@ -244,6 +294,270 @@ void ARPGConceptCharacter::Heal(float _healAmount)
 		playerHealth = 1.00f;
 	}
 }
+
+
+
+void ARPGConceptCharacter::GainExperience(float _expAmount)
+{
+	experiencePoints += _expAmount;
+	if (experiencePoints >= experienceToLevel)
+	{
+		currentLevel++;
+		experiencePoints = FMath::Max((experiencePoints - experienceToLevel), 0.f);
+		experienceToLevel += 500.f;
+		
+	}
+	
+}
+
+
+
+//ATACK FUNCTIONS
+
+
+float ARPGConceptCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+{
+	float DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
+	playerHealth -= DamageToApply;
+	return DamageToApply;
+}
+
+void ARPGConceptCharacter::Attack()
+{
+	if (CombatStance)
+	{
+		//Get a reference to our custom anim instance and tell it to update our character's animation
+		AnimInstance = Cast<UAnimationInstance>(GetMesh()->GetAnimInstance());
+		if (AnimInstance)
+		{
+			AnimInstance->bAcceptsFirstAttackInput = true;
+			AnimInstance->Attack();
+		}
+	}
+
+	if (BowStance)
+	{
+		AnimInstance = Cast<UAnimationInstance>(GetMesh()->GetAnimInstance());
+		if (AnimInstance)
+		{
+			AnimInstance->Fire();
+		}
+	}
+}
+
+void ARPGConceptCharacter::Parry()
+{
+	if (CombatStance)
+	{
+		//Get a reference to our custom anim instance and tell it to update our character's animation
+		AnimInstance = Cast<UAnimationInstance>(GetMesh()->GetAnimInstance());
+		if (AnimInstance)
+		{
+			AnimInstance->Parry();
+		}
+	}
+}
+
+void ARPGConceptCharacter::Kick()
+{
+	AnimInstance = Cast<UAnimationInstance>(GetMesh()->GetAnimInstance());
+	if (AnimInstance)
+	{
+		AnimInstance->Kick();
+	}
+}
+
+void ARPGConceptCharacter::Roll()
+{
+
+	//Get a reference to our custom anim instance and tell it to update our character's animation
+	AnimInstance = Cast<UAnimationInstance>(GetMesh()->GetAnimInstance());
+	if (AnimInstance)
+	{
+		if (CombatStance)
+		{
+			EnableRotation(false);
+		}
+		
+		AnimInstance->Roll();
+	}
+}
+
+
+void ARPGConceptCharacter::FireArrow()
+{
+	if (ArrowClass)
+	{
+		FVector CameraLocation;
+		FRotator CameraRotation;
+		GetActorEyesViewPoint(CameraLocation, CameraRotation);
+
+		// Transform MuzzleOffset from camera space to world space.
+		FVector MuzzleLocation = FirePoint->GetComponentTransform().GetLocation();
+
+		// Skew the aim to be slightly upwards.
+		FRotator MuzzleRotation = CameraRotation;
+		MuzzleRotation.Yaw += 4.5f;
+
+		UWorld* World = GetWorld();
+		if (World)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.Instigator = GetInstigator();
+
+			// Spawn the projectile at the muzzle.
+			AArrow* Arrow = World->SpawnActor<AArrow>(ArrowClass, MuzzleLocation, MuzzleRotation, SpawnParams);
+			if (Arrow)
+			{
+				// Set the projectile's initial trajectory.
+				FVector LaunchDirection = MuzzleRotation.Vector();
+				Arrow->FireInDirection(LaunchDirection);
+			}
+		}
+	}
+	
+}
+
+void ARPGConceptCharacter::CheckCollisionAttack()
+{
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	TArray<FHitResult> HitArray;
+	bool bSuccess = UKismetSystemLibrary::SphereTraceMulti(
+		GetWorld(),
+		CurrentWeapon->Weapon->GetSocketLocation("WeaponStart"),
+		CurrentWeapon->Weapon->GetSocketLocation("WeaponEnd"),
+		10.f,
+		UEngineTypes::ConvertToTraceType(ECC_Camera),
+		true,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		HitArray,
+		true,
+		FLinearColor::Black,
+		FLinearColor::Yellow,
+		3.f);
+	if (bSuccess)
+	{
+		for (const FHitResult Hit : HitArray)
+		{
+			if (Hit.GetActor()->ActorHasTag("Enemy"))
+			{
+				AEnemy* HitEnemy;
+				HitEnemy = Cast<AEnemy>(Hit.GetActor());
+				TSubclassOf<UDamageType> DmgTypeClass = DamageType ? *DamageType : UDamageType::StaticClass(); //Dont know what does but works
+				HitEnemy->TakeDamage(0.1f, FDamageEvent(DmgTypeClass), GetController(), this);
+			}
+			
+		}
+	}
+
+}
+
+void ARPGConceptCharacter::CheckCollisionParry()
+{
+	TArray<AActor*> ActorsToIgnore;
+	ActorsToIgnore.Add(this);
+	TArray<FHitResult> HitArray;
+	bool bSuccess = UKismetSystemLibrary::SphereTraceMulti(
+		GetWorld(),
+		CurrentShield->Weapon->GetSocketLocation("ShieldParry"),
+		CurrentShield->Weapon->GetSocketLocation("ShieldParryEnd"),
+		50.f,
+		UEngineTypes::ConvertToTraceType(ECC_Camera),
+		true,
+		ActorsToIgnore,
+		EDrawDebugTrace::ForDuration,
+		HitArray,
+		true,
+		FLinearColor::Black,
+		FLinearColor::Yellow,
+		3.f);
+	if (bSuccess)
+	{
+		for (const FHitResult Hit : HitArray)
+		{
+			if (Hit.GetActor()->ActorHasTag("EnemySword"))
+			{
+				AEnemy* HitEnemy;
+				HitEnemy = Cast<AEnemy>(Hit.GetActor());
+				TSubclassOf<UDamageType> DmgTypeClass = DamageType ? *DamageType : UDamageType::StaticClass(); //Dont know what does but works
+				HitEnemy->TakeDamage(0.1f, FDamageEvent(DmgTypeClass), GetController(), this);
+			}
+
+		}
+	}
+
+}
+
+void ARPGConceptCharacter::Sheat()
+{
+	if (!BowStance && CurrentWeapon)
+	{
+		hasSheated = !hasSheated;
+		CameraShift();
+		if (hasSheated)
+		{
+			EnableRotation(false);
+		}
+		else 
+		{
+			EnableRotation(true);
+		}
+	}
+
+}
+
+void ARPGConceptCharacter::Bow()
+{
+	if (!CombatStance && CurrentBow)
+	{
+		hasDrawnBow = !hasDrawnBow;
+		CameraShift();
+		if (hasDrawnBow)
+		{
+			EnableRotation(false);
+		}
+		else
+		{
+			EnableRotation(true);
+		}
+	}
+
+}
+
+void ARPGConceptCharacter::EnableRotation(bool Enable)
+{
+	auto characterMovement = GetCharacterMovement();
+	characterMovement->bOrientRotationToMovement = Enable;
+	characterMovement->bUseControllerDesiredRotation = !Enable;
+}
+
+
+
+//INVENTORY FUNCTIONS
+
+
+void ARPGConceptCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (OverlappingActor != OtherActor && (OtherActor != CurrentWeapon) && (OtherActor != CurrentBow) && (OtherActor != CurrentShield))
+	{
+		OverlappingActor = OtherActor;
+		if (OverlappingActor)
+		{
+			isOverlappingItem = true;
+		}
+	}
+
+}
+
+void ARPGConceptCharacter::OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
+{
+	isOverlappingItem = false;
+}
+
+
 
 void ARPGConceptCharacter::PickupItem()
 {
@@ -256,9 +570,9 @@ void ARPGConceptCharacter::PickupItem()
 		if (MyTrigger)
 		{
 			FRPGConceptItemInfo ReturnedStruct = MyTrigger->GetMyStruct();
-			
+
 			for (FRPGConceptItemInfo InventoryName : Inventory)
-			{					
+			{
 				if (ReturnedStruct.ItemName == InventoryName.ItemName && index >= 0)
 				{
 					if (Inventory[index].CurrentStack <= Inventory[index].MaxStack)
@@ -295,82 +609,33 @@ void ARPGConceptCharacter::PickupItem()
 
 }
 
-void ARPGConceptCharacter::ZoomIn()
-{
-	if (auto thirdPersonCamera = GetCameraBoom())
-	{
-		thirdPersonCamera->TargetArmLength = 150.f;
-		thirdPersonCamera->TargetOffset = FVector(0.f, 0.f, 70.f);
-		if (auto characterMovement = GetCharacterMovement())
-		{
-			characterMovement->MaxWalkSpeed = 200.f;
-		}
-		isZoomedIn = true;
-	}	
 
+void ARPGConceptCharacter::Withdrawing()
+{
+	CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("WeaponSocket"));
+	CurrentShield->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("WeaponShieldSocket"));
 }
 
-void ARPGConceptCharacter::ZoomOut()
+void ARPGConceptCharacter::WithdrawingBow()
 {
-	if (auto thirdPersonCamera = GetCameraBoom())
-	{
-		thirdPersonCamera->TargetArmLength = 300.f;
-		thirdPersonCamera->TargetOffset = FVector(0.f, 0.f, 0.f);
-		if (auto characterMovement = GetCharacterMovement())
-		{
-			characterMovement->MaxWalkSpeed = 333.f;
-		}
-		isZoomedIn = false;
-	}
+	CurrentBow->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("WeaponBowSocket"));
 }
 
-float ARPGConceptCharacter::TakeDamage(float DamageAmount, struct FDamageEvent const& DamageEvent, class AController* EventInstigator, AActor* DamageCauser)
+void ARPGConceptCharacter::Sheating()
 {
-	float DamageToApply = Super::TakeDamage(DamageAmount, DamageEvent, EventInstigator, DamageCauser);
-	playerHealth -= DamageToApply;
-	return DamageToApply;
+	CurrentWeapon->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("SwordSocket"));
+	CurrentShield->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("ShieldSocket"));
 }
 
-void ARPGConceptCharacter::GainExperience(float _expAmount)
+void ARPGConceptCharacter::SheatingBow()
 {
-	experiencePoints += _expAmount;
-	if (experiencePoints >= experienceToLevel)
-	{
-		currentLevel++;
-		experiencePoints = FMath::Max((experiencePoints - experienceToLevel), 0.f);
-		experienceToLevel += 500.f;
-		
-	}
-	UE_LOG(LogTemp, Warning, TEXT("exp: %f  ;  level: %i"), experiencePoints, currentLevel);
+	CurrentBow->AttachToComponent(GetMesh(), FAttachmentTransformRules::SnapToTargetIncludingScale, TEXT("BowSocket"));
 }
 
-void ARPGConceptCharacter::Attack()
-{
-}
-
-void ARPGConceptCharacter::WeaponModifiers()
-{
-}
-
-void ARPGConceptCharacter::OnHit(UPrimitiveComponent* HitComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
+void ARPGConceptCharacter::ChangeSword()
 {
 
 }
 
-void ARPGConceptCharacter::OnOverlapBegin(UPrimitiveComponent* OverlappedComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
-{
-	if (OverlappingActor != OtherActor)
-	{
-		OverlappingActor = OtherActor;
-		if (OverlappingActor)
-		{
-			isOverlappingItem = true;
-		}
-	}
-}
 
-void ARPGConceptCharacter::OnOverlapEnd(class UPrimitiveComponent* OverlappedComp, class AActor* OtherActor, class UPrimitiveComponent* OtherComp, int32 OtherBodyIndex)
-{
-	isOverlappingItem = false;
-}
 
