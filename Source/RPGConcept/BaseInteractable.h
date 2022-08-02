@@ -18,6 +18,12 @@ public:
 	// Sets default values for this actor's properties
 	ABaseInteractable();
 
+	UPROPERTY(EditAnywhere)
+		class USkeletalMeshComponent* Weapon;
+
+	UPROPERTY(EditAnywhere)
+		class USphereComponent* SphereCollision;
+
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
@@ -25,11 +31,7 @@ protected:
 	UPROPERTY(EditAnywhere)
 		class UStaticMeshComponent* Item;
 
-	UPROPERTY(EditAnywhere)
-		class USkeletalMeshComponent* Weapon;
-
-	UPROPERTY(EditAnywhere)
-		class USphereComponent* SphereCollision;
+	
 
 	UPROPERTY(EditAnywhere)
 		struct FRPGConceptItemInfo ItemInfo;

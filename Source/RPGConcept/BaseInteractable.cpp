@@ -16,7 +16,7 @@ ABaseInteractable::ABaseInteractable()
 
 	
 	SphereCollision = CreateDefaultSubobject<USphereComponent>("SphereCollision");
-	SphereCollision->SetupAttachment(RootComponent);
+	RootComponent = SphereCollision;
 
 	Item = CreateDefaultSubobject<UStaticMeshComponent>("Item");
 	Item->SetupAttachment(SphereCollision);
